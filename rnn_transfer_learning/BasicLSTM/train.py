@@ -9,7 +9,7 @@ Description:
 Sphinx Documentation Status:
 
 """
-from rnn_tranfer_learning.BasicRNN import save_path
+from rnn_transfer_learning.BasicRNN import save_path
 import tensorflow as tf
 
 tf.logging.set_verbosity(tf.logging.ERROR)

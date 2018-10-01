@@ -9,14 +9,11 @@ Description:
 Sphinx Documentation Status:
 
 """
-
+from rnn_transfer_learning.BasicRNN import save_path
 import tensorflow as tf
 
-tf.set_random_seed(0)
-from rnn_tranfer_learning.transfer_utils import get_transfered_weights_or_bias
-from rnn_tranfer_learning.BasicRNN import save_path
-
 tf.logging.set_verbosity(tf.logging.ERROR)
+tf.set_random_seed(0)
 # hyperparameters
 n_neurons = 128
 learning_rate = 0.001
@@ -29,19 +26,12 @@ n_outputs = 10  # 10 classes
 # build a rnn model
 X = tf.placeholder(tf.float32, [None, n_steps, n_inputs])
 y = tf.placeholder(tf.int32, [None])
-
-cell = tf.nn.rnn_cell.BasicLSTMCell(num_units=n_neurons)
+cell = tf.nn.rnn_cell.GRUCell(num_units=n_neurons, name="myrnn")
 
 outputs, state = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32)
 output_transposed = tf.transpose(outputs, [1, 0, 2])
-
-cell_kernel_assign = cell._kernel.assign(get_transfered_weights_or_bias(model_path=save_path,
-                                                                        variable_name="rnn/myrnn/kernel"))
-cell_bias_assign = cell._bias.assign(get_transfered_weights_or_bias(model_path=save_path,
-                                                                    variable_name="rnn/myrnn/bias"))
-logits = tf.matmul(output_transposed[-1], tf.Variable(name="output", initial_value=
-get_transfered_weights_or_bias(model_path=save_path,
-                               variable_name="output")))
+logits = tf.matmul(output_transposed[-1],
+                   tf.Variable(name="output", initial_value=tf.random_uniform(shape=(n_neurons, n_outputs))))
 # logits = tf.layers.dense(state, n_outputs)
 cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=logits)
 loss = tf.reduce_mean(cross_entropy)
@@ -61,8 +51,7 @@ init = tf.global_variables_initializer()
 saver = tf.train.Saver()
 # train the model
 with tf.Session() as sess:
-    sess.run(init)
-    sess.run([cell_kernel_assign, cell_bias_assign])
+    saver.restore(sess=sess, save_path=save_path + "model.ckpt")
     n_batches = mnist.train.num_examples // batch_size
     for epoch in range(n_epochs):
         for batch in range(n_batches):

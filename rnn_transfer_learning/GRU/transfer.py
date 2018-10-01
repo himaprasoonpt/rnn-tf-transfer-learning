@@ -13,8 +13,8 @@ Sphinx Documentation Status:
 import tensorflow as tf
 
 tf.set_random_seed(0)
-from rnn_tranfer_learning.transfer_utils import get_transfered_weights_or_bias
-from rnn_tranfer_learning.BasicRNN import save_path
+from rnn_transfer_learning.transfer_utils import get_transfered_weights_or_bias
+from rnn_transfer_learning.BasicRNN import save_path
 
 tf.logging.set_verbosity(tf.logging.ERROR)
 # hyperparameters
@@ -30,28 +30,19 @@ n_outputs = 10  # 10 classes
 X = tf.placeholder(tf.float32, [None, n_steps, n_inputs])
 y = tf.placeholder(tf.int32, [None])
 
-cell = tf.nn.rnn_cell.LSTMCell(num_units=n_neurons, use_peepholes=True, num_proj=128)
+cell = tf.nn.rnn_cell.GRUCell(num_units=n_neurons)
 
 outputs, state = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32)
 output_transposed = tf.transpose(outputs, [1, 0, 2])
 
-# For peepholes
-w_f_diag_assign = cell._w_f_diag.assign(get_transfered_weights_or_bias(model_path=save_path,
-                                                                       variable_name="rnn/myrnn/w_f_diag"))
-w_i_diag_assign = cell._w_i_diag.assign(get_transfered_weights_or_bias(model_path=save_path,
-                                                                       variable_name="rnn/myrnn/w_i_diag"))
-w_o_diag_assign = cell._w_o_diag.assign(get_transfered_weights_or_bias(model_path=save_path,
-                                                                       variable_name="rnn/myrnn/w_o_diag"))
-
-# For num projections
-_proj_kernel = cell._proj_kernel.assign(get_transfered_weights_or_bias(model_path=save_path,
-                                                                       variable_name="rnn/myrnn/projection/kernel"))
-
-cell_kernel_assign = cell._kernel.assign(get_transfered_weights_or_bias(model_path=save_path,
-                                                                        variable_name="rnn/myrnn/kernel"))
-cell_bias_assign = cell._bias.assign(get_transfered_weights_or_bias(model_path=save_path,
-                                                                    variable_name="rnn/myrnn/bias"))
-
+cell_gate_kernel_assign = cell._gate_kernel.assign(get_transfered_weights_or_bias(model_path=save_path,
+                                                                                  variable_name="rnn/myrnn/gates/kernel"))
+cell_candidate_kernel_assign = cell._candidate_kernel.assign(get_transfered_weights_or_bias(model_path=save_path,
+                                                                                            variable_name="rnn/myrnn/candidate/kernel"))
+cell_gate_bias_assign = cell._gate_bias.assign(get_transfered_weights_or_bias(model_path=save_path,
+                                                                              variable_name="rnn/myrnn/gates/bias"))
+cell_candidate_bias_assign = cell._candidate_bias.assign(get_transfered_weights_or_bias(model_path=save_path,
+                                                                                        variable_name="rnn/myrnn/candidate/bias"))
 logits = tf.matmul(output_transposed[-1], tf.Variable(name="output", initial_value=
 get_transfered_weights_or_bias(model_path=save_path,
                                variable_name="output")))
@@ -75,7 +66,7 @@ saver = tf.train.Saver()
 # train the model
 with tf.Session() as sess:
     sess.run(init)
-    sess.run([cell_kernel_assign, cell_bias_assign, w_i_diag_assign, w_f_diag_assign, w_o_diag_assign, _proj_kernel])
+    sess.run([cell_gate_kernel_assign, cell_gate_bias_assign, cell_candidate_bias_assign, cell_candidate_kernel_assign])
     n_batches = mnist.train.num_examples // batch_size
     for epoch in range(n_epochs):
         for batch in range(n_batches):

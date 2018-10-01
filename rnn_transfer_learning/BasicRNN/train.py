@@ -9,7 +9,7 @@ Description:
 Sphinx Documentation Status:
 
 """
-from rnn_tranfer_learning.BasicRNN import save_path
+from rnn_transfer_learning.BasicRNN import save_path
 import tensorflow as tf
 
 tf.logging.set_verbosity(tf.logging.ERROR)
@@ -26,11 +26,10 @@ n_outputs = 10  # 10 classes
 # build a rnn model
 X = tf.placeholder(tf.float32, [None, n_steps, n_inputs])
 y = tf.placeholder(tf.int32, [None])
-cell = tf.nn.rnn_cell.LSTMCell(num_units=n_neurons, name="myrnn", use_peepholes=True, num_proj=128)
+cell = tf.nn.rnn_cell.BasicRNNCell(num_units=n_neurons, name="myrnn")
 outputs, state = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32)
 output_transposed = tf.transpose(outputs, [1, 0, 2])
-logits = tf.matmul(output_transposed[-1],
-                   tf.Variable(name="output", initial_value=tf.random_uniform(shape=(n_neurons, n_outputs))))
+logits = tf.matmul(output_transposed[-1], tf.Variable(name="output", initial_value=tf.random_uniform(shape=(n_neurons, n_outputs))))
 # logits = tf.layers.dense(state, n_outputs)
 
 cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=logits)
@@ -65,5 +64,5 @@ with tf.Session() as sess:
     loss_test, acc_test = sess.run(
         [loss, accuracy], feed_dict={X: X_test, y: y_test})
     print('Test Loss: {:.3f}, Test Acc: {:.3f}'.format(loss_test, acc_test))
-    print(sess.run(logits, feed_dict={X: X_train, y: y_train}))
+    print(sess.run(logits,feed_dict={X: X_train, y: y_train}))
     save_path = saver.save(sess, save_path + 'model.ckpt')
