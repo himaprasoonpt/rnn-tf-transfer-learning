@@ -30,15 +30,28 @@ n_outputs = 10  # 10 classes
 X = tf.placeholder(tf.float32, [None, n_steps, n_inputs])
 y = tf.placeholder(tf.int32, [None])
 
-cell = tf.nn.rnn_cell.LSTMCell(num_units=n_neurons)
+cell = tf.nn.rnn_cell.LSTMCell(num_units=n_neurons, use_peepholes=True, num_proj=128)
 
 outputs, state = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32)
 output_transposed = tf.transpose(outputs, [1, 0, 2])
+
+# For peepholes
+w_f_diag_assign = cell._w_f_diag.assign(get_transfered_weights_or_bias(model_path=save_path,
+                                                                       variable_name="rnn/myrnn/w_f_diag"))
+w_i_diag_assign = cell._w_i_diag.assign(get_transfered_weights_or_bias(model_path=save_path,
+                                                                       variable_name="rnn/myrnn/w_i_diag"))
+w_o_diag_assign = cell._w_o_diag.assign(get_transfered_weights_or_bias(model_path=save_path,
+                                                                       variable_name="rnn/myrnn/w_o_diag"))
+
+# For num projections
+_proj_kernel = cell._proj_kernel.assign(get_transfered_weights_or_bias(model_path=save_path,
+                                                                       variable_name="rnn/myrnn/projection/kernel"))
 
 cell_kernel_assign = cell._kernel.assign(get_transfered_weights_or_bias(model_path=save_path,
                                                                         variable_name="rnn/myrnn/kernel"))
 cell_bias_assign = cell._bias.assign(get_transfered_weights_or_bias(model_path=save_path,
                                                                     variable_name="rnn/myrnn/bias"))
+
 logits = tf.matmul(output_transposed[-1], tf.Variable(name="output", initial_value=
 get_transfered_weights_or_bias(model_path=save_path,
                                variable_name="output")))
@@ -62,7 +75,7 @@ saver = tf.train.Saver()
 # train the model
 with tf.Session() as sess:
     sess.run(init)
-    sess.run([cell_kernel_assign, cell_bias_assign])
+    sess.run([cell_kernel_assign, cell_bias_assign, w_i_diag_assign, w_f_diag_assign, w_o_diag_assign, _proj_kernel])
     n_batches = mnist.train.num_examples // batch_size
     for epoch in range(n_epochs):
         for batch in range(n_batches):
@@ -76,4 +89,4 @@ with tf.Session() as sess:
     loss_test, acc_test = sess.run(
         [loss, accuracy], feed_dict={X: X_test, y: y_test})
     print('Test Loss: {:.3f}, Test Acc: {:.3f}'.format(loss_test, acc_test))
-    print(sess.run(cell._kernel))
+    print(sess.run(logits, feed_dict={X: X_train, y: y_train}))

@@ -65,4 +65,4 @@ with tf.Session() as sess:
     loss_test, acc_test = sess.run(
         [loss, accuracy], feed_dict={X: X_test, y: y_test})
     print('Test Loss: {:.3f}, Test Acc: {:.3f}'.format(loss_test, acc_test))
-    print(sess.run(cell._kernel))
+    print(sess.run(logits, feed_dict={X: X_train, y: y_train}))
