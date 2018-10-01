@@ -15,6 +15,7 @@ import tensorflow as tf
 tf.set_random_seed(0)
 from rnn_tranfer_learning.transfer_utils import get_transfered_weights_or_bias
 from rnn_tranfer_learning.BasicRNN import save_path
+
 tf.logging.set_verbosity(tf.logging.ERROR)
 # hyperparameters
 n_neurons = 128
@@ -29,17 +30,16 @@ n_outputs = 10  # 10 classes
 X = tf.placeholder(tf.float32, [None, n_steps, n_inputs])
 y = tf.placeholder(tf.int32, [None])
 
-
-
 cell = tf.nn.rnn_cell.BasicRNNCell(num_units=n_neurons)
 
-output, state = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32)
+outputs, state = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32)
 cell_kernel_assign = cell._kernel.assign(get_transfered_weights_or_bias(model_path=save_path,
                                                                         variable_name="rnn/myrnn/kernel"))
 cell_bias_assign = cell._bias.assign(get_transfered_weights_or_bias(model_path=save_path,
                                                                     variable_name="rnn/myrnn/bias"))
-logits = tf.matmul(state, tf.Variable(name="output", initial_value=
-get_transfered_weights_or_bias(model_path=save_path,
+
+output_transposed = tf.transpose(outputs, [1, 0, 2])
+logits = tf.matmul(output_transposed[-1], tf.Variable(name="output", initial_value=get_transfered_weights_or_bias(model_path=save_path,
                                variable_name="output")))
 # logits = tf.layers.dense(state, n_outputs)
 cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=logits)

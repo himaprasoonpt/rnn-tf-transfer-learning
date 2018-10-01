@@ -1,5 +1,6 @@
 from rnn_tranfer_learning.BasicRNN import save_path
 import tensorflow as tf
+
 tf.logging.set_verbosity(tf.logging.ERROR)
 tf.set_random_seed(0)
 # hyperparameters
@@ -16,10 +17,12 @@ X = tf.placeholder(tf.float32, [None, n_steps, n_inputs])
 y = tf.placeholder(tf.int32, [None])
 cell = tf.nn.rnn_cell.BasicRNNCell(num_units=n_neurons, name="myrnn")
 output, state = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32)
-print(output)
+print("output", output)
+print("cell._kernel", cell._kernel)
+print("state", state)
 logits = tf.matmul(state, tf.Variable(name="output", initial_value=tf.random_uniform(shape=(n_neurons, n_outputs))))
 # logits = tf.layers.dense(state, n_outputs)
-print(cell._kernel)
+
 cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=logits)
 loss = tf.reduce_mean(cross_entropy)
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
@@ -53,4 +56,4 @@ with tf.Session() as sess:
         [loss, accuracy], feed_dict={X: X_test, y: y_test})
     print('Test Loss: {:.3f}, Test Acc: {:.3f}'.format(loss_test, acc_test))
     print(sess.run(cell._kernel))
-    save_path = saver.save(sess, save_path+'model.ckpt')
+    save_path = saver.save(sess, save_path + 'model.ckpt')
