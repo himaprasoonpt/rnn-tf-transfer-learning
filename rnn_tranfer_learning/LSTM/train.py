@@ -26,10 +26,11 @@ n_outputs = 10  # 10 classes
 # build a rnn model
 X = tf.placeholder(tf.float32, [None, n_steps, n_inputs])
 y = tf.placeholder(tf.int32, [None])
-cell = tf.nn.rnn_cell.BasicRNNCell(num_units=n_neurons, name="myrnn")
+cell = tf.nn.rnn_cell.LSTMCell(num_units=n_neurons, name="myrnn", use_peepholes=True)
 outputs, state = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32)
 output_transposed = tf.transpose(outputs, [1, 0, 2])
-logits = tf.matmul(output_transposed[-1], tf.Variable(name="output", initial_value=tf.random_uniform(shape=(n_neurons, n_outputs))))
+logits = tf.matmul(output_transposed[-1],
+                   tf.Variable(name="output", initial_value=tf.random_uniform(shape=(n_neurons, n_outputs))))
 # logits = tf.layers.dense(state, n_outputs)
 
 cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=logits)

@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+"""
+@created on: 9/28/18,
+@author: Himaprasoon,
+@version: v0.0.1
+
+Description:
+
+Sphinx Documentation Status:
+
+"""
 from rnn_tranfer_learning.BasicRNN import save_path
 import tensorflow as tf
 
